@@ -1,7 +1,7 @@
 // A two octet code which specifies the type of the query. The values for this
 // field include all codes valid for a TYPE field, together with some more
 // general codes which can match more than one type of RR.
-#[derive(PartialEq, Eq, Debug, Clone, Hash, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum QueryType {
     UNKNOWN(u16),
     // 1 a host address

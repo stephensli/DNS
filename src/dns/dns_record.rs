@@ -61,9 +61,9 @@ use crate::dns::query_type::QueryType;
 #[allow(dead_code)]
 pub enum DnsRecord {
     // 0
-    UNKNOWN {
+    UNHANDLED {
         domain: String,
-        qtype: u16,
+        qtype: QueryType,
         data_len: u16,
         ttl: u32,
     },
@@ -107,17 +107,17 @@ impl DnsRecord {
                 })
             }
 
-            QueryType::UNKNOWN(_) => {
+           _ => {
                 buffer.step(data_len as usize);
 
-                Ok(DnsRecord::UNKNOWN {
+                Ok(DnsRecord::UNHANDLED {
+
                     domain,
-                    qtype: qtype_num,
+                    qtype: QueryType::from_num(qtype_num),
                     data_len,
                     ttl,
                 })
             }
-            x => Err(UnhandledDnsQueryType(x))
         }
     }
 
@@ -142,7 +142,7 @@ impl DnsRecord {
                 buffer.write_u8(octets[2])?;
                 buffer.write_u8(octets[3])?;
             }
-            DnsRecord::UNKNOWN { .. } => {
+            DnsRecord::UNHANDLED { .. } => {
                 println!("Skipping record: {:?}", self);
             }
         }

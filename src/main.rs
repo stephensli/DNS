@@ -2,6 +2,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::net::UdpSocket;
+use std::process::exit;
 use crate::dns::byte_packet_buffer::{BytePacketBuffer};
 use crate::dns::dns_packet::DnsPacket;
 use crate::dns::dns_question::DnsQuestion;
@@ -11,7 +12,7 @@ mod dns;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Perform an A query for google.com
-    let qname = "google.com";
+    let qname = "www.yahoo.com";
     let qtype = QueryType::A;
 
     // Using googles public DNS server
@@ -45,7 +46,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // As per the previous section, `DnsPacket::from_buffer()` is then used to
     // actually parse the packet after which we can print the response.
-    let res_packet = DnsPacket::from_buffer(&mut res_buffer)?;
+    let res_packet = match DnsPacket::from_buffer(&mut res_buffer) {
+        Ok(v) => v,
+        Err(err) => { println!("{}", err); exit(1) }
+    };
+
     println!("{:#?}", res_packet.header);
 
     for q in res_packet.questions {

@@ -33,12 +33,12 @@ pub enum BytePacketBufferError {
 
 impl Display for BytePacketBufferError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
+        return match self {
             BytePacketBufferError::QueryLabelNameLengthExceeded(index, length) => write!(f, "label in position {:?} exceeded 63 characters ({:?})", index, length),
             BytePacketBufferError::QueryDomainNameLengthExceeded(size)  => write!(f, "domain name exceeded 255 characters ({:?})", size),
-            BytePacketBufferError::UnhandledDnsQueryType(t) => write!(f, "Unhandled Dns Query Type {:?}", t),
-            BytePacketBufferError::ExceededJumpCount(j) => write!(f, "Exceeded jump count {:?}", j),
-            BytePacketBufferError::EndOfBuffer => write!(f, "End Of Buffer"),
+            BytePacketBufferError::UnhandledDnsQueryType(t) => write!(f, "unhandled dns query type: {:?}", t),
+            BytePacketBufferError::ExceededJumpCount(j) => write!(f, "exceeded jump count {:?}", j),
+            BytePacketBufferError::EndOfBuffer => write!(f, "end of buffer"),
         }
     }
 }
