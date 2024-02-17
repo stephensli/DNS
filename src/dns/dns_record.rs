@@ -1,4 +1,4 @@
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, Ipv6Addr};
 use crate::dns::byte_packet_buffer::BytePacketBuffer;
 use crate::dns::byte_packet_buffer_error::BytePacketBufferError;
 use crate::dns::byte_packet_buffer_error::BytePacketBufferError::UnhandledDnsQueryType;
@@ -67,10 +67,77 @@ pub enum DnsRecord {
         data_len: u16,
         ttl: u32,
     },
-    // 1
+    // Code 1
+    //
+    // A 32 bit IPv4 address is encoded in the data portion of an A resource
+    // record in network byte order.
     A {
         domain: String,
         addr: Ipv4Addr,
+        ttl: u32,
+    },
+    // Code 2
+    // https://datatracker.ietf.org/doc/html/rfc1035#section-3.3.11
+    //
+    // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    // /                   NSDNAME                     /
+    // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    //
+    // NSDNAME: A <domain-name> which specifies a host which should be
+    // authoritative for the specified class and domain.
+    NS {
+        domain: String,
+        host: String,
+        ttl: u32,
+    },
+    // Code 5
+    // https://datatracker.ietf.org/doc/html/rfc1035#section-3.3.1
+    //
+    // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    // /                     CNAME                     /
+    // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    //
+    // CNAME: A <domain-name> which specifies the canonical or primary name for
+    // the owner.  The owner name is an alias.
+    CNAME {
+        domain: String,
+        host: String,
+        ttl: u32,
+    },
+    // Code 15
+    // https://datatracker.ietf.org/doc/html/rfc1035#section-3.3.9
+    //
+    //  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    //  |                  PREFERENCE                   |
+    //  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    //  /                   EXCHANGE                    /
+    //  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    //
+    // PREFERENCE: A 16 bit integer which specifies the preference given to this
+    // RR among others at the same owner.  Lower values are preferred.
+    //
+    // EXCHANGE A <domain-name> which specifies a host willing to act as a mail
+    // exchange for the owner name.
+    MX {
+        domain: String,
+        priority: u16,
+        host: String,
+        ttl: u32,
+    },
+    // 28
+    //
+    // A 128 bit IPv6 address is encoded in the data portion of an AAAA resource
+    // record in network byte order (high-order byte first).
+    //
+    // An AAAA query for a specified domain name in the Internet class returns
+    // all associated AAAA resource records in the answer section of a response.
+    //
+    // A type AAAA query does not trigger additional section processing.
+    //
+    // https://datatracker.ietf.org/doc/html/rfc3596#section-2.2
+    AAAA {
+        domain: String,
+        addr: Ipv6Addr,
         ttl: u32,
     },
 }
@@ -107,11 +174,10 @@ impl DnsRecord {
                 })
             }
 
-           _ => {
+            _ => {
                 buffer.step(data_len as usize);
 
                 Ok(DnsRecord::UNHANDLED {
-
                     domain,
                     qtype: QueryType::from_num(qtype_num),
                     data_len,
@@ -143,6 +209,9 @@ impl DnsRecord {
                 buffer.write_u8(octets[3])?;
             }
             DnsRecord::UNHANDLED { .. } => {
+                println!("Skipping record: {:?}", self);
+            }
+            _ => {
                 println!("Skipping record: {:?}", self);
             }
         }

@@ -4,15 +4,32 @@
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum QueryType {
     UNKNOWN(u16),
-    // 1 a host address
+    // 1 A host address
     A,
-    // 2 an authoritative name server
+    // 2 An authoritative name server
+    //
+    // NS records cause both the usual additional section processing to locate a
+    // type A record, and, when used in a referral, a special search of the zone
+    // in which they reside for glue information.
+    //
+    // The NS RR states that the named host should be expected to have a zone
+    // starting at owner name of the specified class. Note that the class may
+    // not indicate the protocol family which should be used to communicate with
+    // the host, although it is typically a strong hint. For example, hosts
+    // which are name servers for either Internet (IN) or Hesiod (HS) class
+    // information are normally queried using IN class protocols.
     NS,
     // 3 a mail destination (Obsolete - use MX)
     MD,
     // 4 a mail forwarder (Obsolete - use MX)
     MF,
     // 5 the canonical name for an alias
+    //
+    // CNAME RRs cause no additional section processing, but name servers may
+    // choose to restart the query at the canonical name in certain cases.See
+    // the description of name server logic in [RFC-1034] for details.
+    //
+    // https://datatracker.ietf.org/doc/html/rfc1035#section-3.3.1
     CNAME,
     // 6 marks the start of a zone of authority
     SOA,
@@ -33,9 +50,20 @@ pub enum QueryType {
     // 14 mailbox or mail list information
     MINFO,
     // 15 mail exchange
+    //
+    // MX records cause type A additional section processing for the host
+    // specified by EXCHANGE. The use of MX RRs is explained in detail in
+    // [RFC-974].
+    //
+    // https://datatracker.ietf.org/doc/html/rfc1035#section-3.3.9
     MX,
     // 16 text strings
     TXT,
+    // AAAA A record specific to the Internet class that stores a single IPv6
+    // address. The IANA assigned value of the type is 28 (decimal).
+    //
+    // https://datatracker.ietf.org/doc/html/rfc3596#section-2.1
+    AAAA,
     // 252 A request for a transfer of an entire zone
     AXFR,
     // 253 A request for mailbox-related records (MB, MG or MR)
@@ -66,6 +94,7 @@ impl QueryType {
             QueryType::MINFO => 14,
             QueryType::MX => 15,
             QueryType::TXT => 16,
+            QueryType::AAAA => 28,
             QueryType::AXFR => 252,
             QueryType::MAILB => 253,
             QueryType::MAILA => 254,

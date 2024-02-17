@@ -6,3 +6,4 @@ pub mod result_code;
 pub mod dns_record;
 pub mod dns_packet;
 mod byte_packet_buffer_error;
+pub(crate) mod query_class;

@@ -3,6 +3,7 @@ use crate::dns::byte_packet_buffer_error::BytePacketBufferError;
 use crate::dns::dns_header::DnsHeader;
 use crate::dns::dns_question::DnsQuestion;
 use crate::dns::dns_record::DnsRecord;
+use crate::dns::query_class::QueryClass;
 use crate::dns::query_type::QueryType;
 
 // RFC 1035
@@ -62,7 +63,12 @@ impl DnsPacket {
         result.header.read(buffer)?;
 
         for _ in 0..result.header.questions {
-            let mut question = DnsQuestion::new("".to_string(), QueryType::UNKNOWN(0));
+            let mut question = DnsQuestion::new(
+                "".to_string(),
+                QueryType::UNKNOWN(0),
+                QueryClass::UNKNOWN(0),
+            );
+
             question.read(buffer)?;
             result.questions.push(question);
         }

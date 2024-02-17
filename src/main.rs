@@ -7,6 +7,7 @@ use crate::dns::byte_packet_buffer::{BytePacketBuffer};
 use crate::dns::dns_packet::DnsPacket;
 use crate::dns::dns_question::DnsQuestion;
 use crate::dns::query_type::QueryType;
+use crate::dns::query_class::QueryClass;
 
 mod dns;
 
@@ -14,6 +15,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Perform an A query for google.com
     let qname = "www.yahoo.com";
     let qtype = QueryType::A;
+    let qclass = QueryClass::IN;
 
     // Using googles public DNS server
     let server = ("8.8.8.8", 53);
@@ -30,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     packet.header.recursion_desired = true;
     packet
         .questions
-        .push(DnsQuestion::new(qname.to_string(), qtype));
+        .push(DnsQuestion::new(qname.to_string(), qtype, qclass));
 
     // Use our new write method to write the packet to a buffer...
     let mut req_buffer = BytePacketBuffer::new();
