@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use crate::dns::byte_packet_buffer::BytePacketBufferError::{EndOfBuffer, ExceededJumpCount};
+use crate::dns::query_type::QueryType;
 
 #[derive(Debug)]
 pub enum BytePacketBufferError {
@@ -11,6 +12,10 @@ pub enum BytePacketBufferError {
     // The requested values have resulted in the end of the buffer being met
     // or exceeding the end of the buffer.
     EndOfBuffer,
+    // The returned query type for the DNS record is not being handled. For
+    // example the returned type is A record and was ignored in the
+    // implementation.
+    UnhandledDnsQueryType(QueryType)
 }
 
 impl Display for BytePacketBufferError {

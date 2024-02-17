@@ -1,5 +1,6 @@
 use std::net::Ipv4Addr;
 use crate::dns::byte_packet_buffer::{BytePacketBuffer, BytePacketBufferError};
+use crate::dns::byte_packet_buffer::BytePacketBufferError::UnhandledDnsQueryType;
 use crate::dns::query_type::QueryType;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -27,7 +28,11 @@ impl DnsRecord {
         let qtype_num = buffer.read_u16()?;
         let qtype = QueryType::from_num(qtype_num);
 
+        // two octets which specify the class of the data in the RDATA field.
+        // This is currently ignored here since we don't use it for any values
+        // within our record.
         let _ = buffer.read_u16()?;
+
         let ttl = buffer.read_u32()?;
         let data_len = buffer.read_u16()?;
 
@@ -58,6 +63,7 @@ impl DnsRecord {
                     ttl,
                 })
             }
+            x => Err(UnhandledDnsQueryType(x))
         }
     }
 }
