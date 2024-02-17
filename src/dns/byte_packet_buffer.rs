@@ -176,6 +176,30 @@ impl BytePacketBuffer {
         Ok(qname)
     }
 
+    // Set writes a byte at the given position within the buffer and then
+    // does not move or shift the position. Allowing updates to happen after
+    // the fact.
+    pub fn set(&mut self, pos: usize, val: u8) -> Result<(), BytePacketBufferError> {
+        self.buffer[pos] = val;
+        Ok(())
+    }
+
+    pub fn set_u16(&mut self, pos: usize, val: u16) -> Result<(), BytePacketBufferError> {
+        self.set(pos, (val >> 8) as u8)?;
+        self.set(pos + 1, ((val >> 0) & 0xFF) as u8)?;
+        Ok(())
+    }
+
+    pub  fn set_u32(&mut self, pos: usize, val: u32) -> Result<(), BytePacketBufferError> {
+        self.set(pos, (val >> 24) as u8)?;
+        self.set(pos + 1, ((val >> 16) & 0xFF) as u8)?;
+        self.set(pos + 2, ((val >> 8) & 0xFF) as u8)?;
+        self.set(pos + 3, ((val >> 0) & 0xFF) as u8)?;
+        Ok(())
+    }
+
+    // Writes the byte data into the buffer at the given position and takes
+    // one step forward within the buffer.
     pub fn write(&mut self, value: u8) -> Result<(), BytePacketBufferError> {
         if self.position >= 512 {
             return Err(EndOfBuffer);
