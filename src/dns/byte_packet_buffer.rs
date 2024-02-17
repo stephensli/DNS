@@ -1,32 +1,5 @@
-use std::error::Error;
-use std::fmt::{Display, Formatter};
-use crate::dns::byte_packet_buffer::BytePacketBufferError::{EndOfBuffer, ExceededJumpCount};
-use crate::dns::query_type::QueryType;
-
-#[derive(Debug)]
-pub enum BytePacketBufferError {
-    // When reading the label names, the maximum jump counts have been reached
-    // and has resulted in the termination of the packet. This is most likely
-    // due to a circular jump injection.
-    ExceededJumpCount(i32),
-    // The requested values have resulted in the end of the buffer being met
-    // or exceeding the end of the buffer.
-    EndOfBuffer,
-    // The returned query type for the DNS record is not being handled. For
-    // example the returned type is A record and was ignored in the
-    // implementation.
-    UnhandledDnsQueryType(QueryType)
-}
-
-impl Display for BytePacketBufferError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for BytePacketBufferError {
-
-}
+use crate::dns::byte_packet_buffer_error::BytePacketBufferError;
+use crate::dns::byte_packet_buffer_error::BytePacketBufferError::{EndOfBuffer, ExceededJumpCount, QueryDomainNameLengthExceeded, QueryLabelNameLengthExceeded};
 
 pub struct BytePacketBuffer {
     pub buffer: [u8; 512],
@@ -45,7 +18,7 @@ impl BytePacketBuffer {
     }
 
     // Get the current position within the buffer.
-    fn position(&self) -> usize {
+    pub fn position(&self) -> usize {
         self.position
     }
 
@@ -201,5 +174,73 @@ impl BytePacketBuffer {
         }
 
         Ok(qname)
+    }
+
+    pub fn write(&mut self, value: u8) -> Result<(), BytePacketBufferError> {
+        if self.position >= 512 {
+            return Err(EndOfBuffer);
+        }
+
+        self.buffer[self.position] = value;
+        self.step(1);
+        Ok(())
+    }
+
+    pub fn write_u8(&mut self, value: u8) -> Result<(), BytePacketBufferError> {
+        self.write(value)
+    }
+
+    pub fn write_u16(&mut self, val: u16) -> Result<(), BytePacketBufferError> {
+        self.write((val >> 8) as u8)?;
+        self.write((val & 0xFF) as u8)
+    }
+
+    pub fn write_u32(&mut self, val: u32) -> Result<(), BytePacketBufferError> {
+        self.write(((val >> 24) & 0xFF) as u8)?;
+        self.write(((val >> 16) & 0xFF) as u8)?;
+        self.write(((val >> 8) & 0xFF) as u8)?;
+        self.write(((val >> 0) & 0xFF) as u8)
+    }
+
+    // Write the question domain name.
+    //
+    // Domain names in messages are expressed in terms of a sequence of labels.
+    // Each label is represented as a one octet length field followed by that
+    // number of octets.
+    //
+    // Since every domain name ends with the null label of the root, a domain
+    // name is terminated by a length byte of ZERO. The high order two bits of
+    // every length octet must be zero, and the remaining six bits of the length
+    // field limit the label to 63 octets or fewer.
+    //
+    // labels          63 octets or fewer.
+    // names           255 octets or fewer.
+    //
+    // [Page 9]
+    // RFC 1035
+    // Domain Implementation and Specification
+    // November 1987
+    // 2.3.4. Size limits
+    pub fn write_question_name(&mut self, value: &str) -> Result<(), BytePacketBufferError> {
+        if value.len() > 255 {
+            return Err(QueryDomainNameLengthExceeded(value.len()));
+        }
+
+        for (index, value) in value.split(".").into_iter().enumerate() {
+            if value.len() > 63 {
+                return Err(QueryLabelNameLengthExceeded(index, value.len()));
+            }
+
+            // First go and write the length into the first package bit.
+            self.write_u8(value.len() as u8)?;
+
+            // Secondly go and write the bytes into the package.
+            for x in value.as_bytes() {
+                self.write_u8(*x)?
+            }
+        }
+
+        // Terminate the domain name with a byte of size zero.
+        self.write_u8(0)
     }
 }

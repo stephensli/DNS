@@ -76,6 +76,25 @@ impl QueryType {
     pub fn from_num(num: u16) -> QueryType {
         match num {
             1 => QueryType::A,
+            2 => QueryType::NS,
+            3 => QueryType::MD,
+            4 => QueryType::MF,
+            5 => QueryType::CNAME,
+            6 => QueryType::SOA,
+            7 => QueryType::MB,
+            8 => QueryType::MG,
+            9 => QueryType::MR,
+            10 => QueryType::NULL,
+            11 => QueryType::WKS,
+            12 => QueryType::PTR,
+            13 => QueryType::HINFO,
+            14 => QueryType::MINFO,
+            15 => QueryType::MX,
+            16 => QueryType::TXT,
+            252 => QueryType::AXFR,
+            253 => QueryType::MAILB,
+            254 => QueryType::MAILA,
+            255 => QueryType::EVERYTHING,
             _ => QueryType::UNKNOWN(num),
         }
     }

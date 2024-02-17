@@ -1,6 +1,29 @@
-use crate::dns::byte_packet_buffer::{BytePacketBuffer, BytePacketBufferError};
+use crate::dns::byte_packet_buffer::{BytePacketBuffer};
+use crate::dns::byte_packet_buffer_error::BytePacketBufferError;
 use crate::dns::result_code::ResultCode;
 
+
+
+// RFC 1035
+// 4.1.1. Header section format [Page 27]
+//
+// The header contains the following fields:
+//
+// 1  1  1  1  1  1
+// 0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+// |                      ID                       |
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+// |QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+// |                    QDCOUNT                    |
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+// |                    ANCOUNT                    |
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+// |                    NSCOUNT                    |
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+// |                    ARCOUNT                    |
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 #[derive(Clone, Debug)]
 pub struct DnsHeader {
     // A 16 bit identifier assigned by the program that generates any kind of
@@ -128,5 +151,31 @@ impl DnsHeader {
         self.resource_entries = buffer.read_u16()?;
 
         Ok(())
+    }
+
+
+    pub fn write(&self, buffer: &mut BytePacketBuffer) -> Result<(), BytePacketBufferError> {
+        buffer.write_u16(self.id)?;
+
+        buffer.write_u8(
+            (self.recursion_desired as u8)
+                | ((self.truncated_message as u8) << 1)
+                | ((self.authoritative_answer as u8) << 2)
+                | (self.opcode << 3)
+                | ((self.response as u8) << 7) as u8,
+        )?;
+
+        buffer.write_u8(
+            (self.rescode as u8)
+                | ((self.checking_disabled as u8) << 4)
+                | ((self.authed_data as u8) << 5)
+                | ((self.z as u8) << 6)
+                | ((self.recursion_available as u8) << 7),
+        )?;
+
+        buffer.write_u16(self.questions)?;
+        buffer.write_u16(self.answers)?;
+        buffer.write_u16(self.authoritative_entries)?;
+        buffer.write_u16(self.resource_entries)
     }
 }

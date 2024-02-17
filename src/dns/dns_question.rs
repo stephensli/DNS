@@ -1,6 +1,25 @@
-use crate::dns::byte_packet_buffer::{BytePacketBuffer, BytePacketBufferError};
+use crate::dns::byte_packet_buffer::BytePacketBuffer;
+use crate::dns::byte_packet_buffer_error::BytePacketBufferError;
 use crate::dns::query_type::QueryType;
 
+// RFC 1035
+// 4.1.1. Header section format [Page 27]
+//
+// The question section is used to carry the "question" in most queries,
+// i.e., the parameters that define what is being asked.  The section
+// contains QDCOUNT (usually 1) entries, each of the following format:
+//
+//                                 1  1  1  1  1  1
+//   0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+// |                                               |
+// /                     QNAME                     /
+// /                                               /
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+// |                     QTYPE                     |
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+// |                     QCLASS                    |
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsQuestion {
     // A domain name represented as a sequence of labels, where each label
@@ -29,5 +48,13 @@ impl DnsQuestion {
         let _ = buffer.read_u16()?; // class
 
         Ok(())
+    }
+
+    pub fn write(&self, buffer: &mut BytePacketBuffer) -> Result<(), BytePacketBufferError> {
+        buffer.write_question_name(&self.q_name)?;
+
+        let type_number = self.q_type.to_num();
+        buffer.write_u16(type_number)?;
+        buffer.write_u16(1)
     }
 }
