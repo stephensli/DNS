@@ -48,7 +48,7 @@ impl DnsQuestion {
     }
 
     pub fn read(&mut self, buffer: &mut BytePacketBuffer) -> Result<(), BytePacketBufferError> {
-        self.q_name = buffer.read_qname()?;
+        self.q_name = buffer.read_question_name()?;
         self.q_type = QueryType::from_num(buffer.read_u16()?); // qtype
         self.q_class = QueryClass::from_num(buffer.read_u16()?); // class
 

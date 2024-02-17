@@ -84,7 +84,7 @@ impl BytePacketBuffer {
     /// The Reading domain names, taking labels into consideration.
     /// Will take something like [3]www[6]google[3]com[0] and append
     /// www.google.com to outstr.
-    pub fn read_qname(&mut self) -> Result<String, BytePacketBufferError> {
+    pub fn read_question_name(&mut self) -> Result<String, BytePacketBufferError> {
         // Since we might encounter jumps, we'll keep track of our position
         // locally as opposed to using the position within the struct. This
         // allows us to move the shared position to a point past our current

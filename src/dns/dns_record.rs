@@ -145,7 +145,7 @@ pub enum DnsRecord {
 
 impl DnsRecord {
     pub fn read(buffer: &mut BytePacketBuffer) -> Result<DnsRecord, BytePacketBufferError> {
-        let mut domain = buffer.read_qname()?;
+        let mut domain = buffer.read_question_name()?;
 
         let qtype_num = buffer.read_u16()?;
         let qtype = QueryType::from_num(qtype_num);
@@ -191,16 +191,16 @@ impl DnsRecord {
                 Ok(DnsRecord::AAAA { domain, addr, ttl })
             }
             QueryType::NS => {
-                let host = buffer.read_qname()?;
+                let host = buffer.read_question_name()?;
                 Ok(DnsRecord::NS { domain, host, ttl })
             }
             QueryType::CNAME => {
-                let host = buffer.read_qname()?;
+                let host = buffer.read_question_name()?;
                 Ok(DnsRecord::CNAME { domain, host, ttl })
             }
             QueryType::MX => {
                 let priority = buffer.read_u16()?;
-                let host = buffer.read_qname()?;
+                let host = buffer.read_question_name()?;
                 Ok(DnsRecord::MX { domain, preference: priority, host, ttl })
             }
 
