@@ -13,8 +13,8 @@ mod dns;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Perform an A query for google.com
-    let qname = "www.yahoo.com";
-    let qtype = QueryType::A;
+    let qname = "yahoo.co.uk";
+    let qtype = QueryType::TXT;
     let qclass = QueryClass::IN;
 
     // Using googles public DNS server

@@ -33,7 +33,7 @@ impl BytePacketBuffer {
     }
 
     // Read a single byte and then move the position one step forward.
-    fn read(&mut self) -> Result<u8, BytePacketBufferError> {
+    pub fn read(&mut self) -> Result<u8, BytePacketBufferError> {
         if self.position >= 512 {
             return Err(EndOfBuffer);
         }

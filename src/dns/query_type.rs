@@ -58,6 +58,11 @@ pub enum QueryType {
     // https://datatracker.ietf.org/doc/html/rfc1035#section-3.3.9
     MX,
     // 16 text strings
+    //
+    // TXT RRs are used to hold descriptive text. The semantics of the text
+    // depends on the domain where it is found.
+    //
+    // https://datatracker.ietf.org/doc/html/rfc1035#section-3.3.14
     TXT,
     // AAAA A record specific to the Internet class that stores a single IPv6
     // address. The IANA assigned value of the type is 28 (decimal).

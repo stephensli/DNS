@@ -141,6 +141,24 @@ pub enum DnsRecord {
         addr: Ipv6Addr,
         ttl: u32,
     },
+
+    // Code 16
+    //
+    // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    // /                   TXT-DATA                    /
+    // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    //
+    // TXT-DATA: One or more <character-string>s.
+    //
+    // TXT RRs are used to hold descriptive text. The semantics of the text
+    // depends on the domain where it is found.
+    //
+    // https://datatracker.ietf.org/doc/html/rfc1035#section-3.3.14
+    TXT {
+        domain: String,
+        txt: String,
+        ttl: u32,
+    },
 }
 
 impl DnsRecord {
@@ -202,6 +220,17 @@ impl DnsRecord {
                 let priority = buffer.read_u16()?;
                 let host = buffer.read_question_name()?;
                 Ok(DnsRecord::MX { domain, preference: priority, host, ttl })
+            }
+
+            QueryType::TXT => {
+                let mut data: Vec<u8> = vec![];
+
+                for i in 0..data_len {
+                    data.push(buffer.read()?);
+                }
+
+                let txt = String::from_utf8_lossy(&data[..]).to_string();
+                Ok(DnsRecord::TXT { domain, txt, ttl })
             }
 
             _ => {
@@ -330,6 +359,25 @@ impl DnsRecord {
 
                 for octet in &addr.segments() {
                     buffer.write_u16(*octet)?;
+                }
+            }
+
+            DnsRecord::TXT {
+                ref domain,
+                ref txt,
+                ttl
+            } => {
+                buffer.write_question_name(domain)?;
+                buffer.write_u16(QueryType::TXT.to_num())?;
+                buffer.write_u16(QueryClass::IN.to_num())?;
+                buffer.write_u32(ttl)?;
+
+                let bytes_txt = txt.as_bytes();
+
+                buffer.write_u16(bytes_txt.len() as u16)?;
+
+                for x in bytes_txt {
+                    buffer.write_u8(*x)?;
                 }
             }
         }
