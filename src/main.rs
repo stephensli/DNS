@@ -1,6 +1,4 @@
 use std::error::Error;
-use std::fs::File;
-use std::io::Read;
 use std::net::UdpSocket;
 use std::process::exit;
 use crate::dns::byte_packet_buffer::{BytePacketBuffer};

@@ -163,7 +163,7 @@ pub enum DnsRecord {
 
 impl DnsRecord {
     pub fn read(buffer: &mut BytePacketBuffer) -> Result<DnsRecord, BytePacketBufferError> {
-        let mut domain = buffer.read_question_name()?;
+        let domain = buffer.read_question_name()?;
 
         let qtype_num = buffer.read_u16()?;
         let qtype = QueryType::from_num(qtype_num);
@@ -225,7 +225,7 @@ impl DnsRecord {
             QueryType::TXT => {
                 let mut data: Vec<u8> = vec![];
 
-                for i in 0..data_len {
+                for _ in 0..data_len {
                     data.push(buffer.read()?);
                 }
 
