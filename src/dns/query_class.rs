@@ -1,17 +1,17 @@
-// https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.4
-//
-// CLASS fields appear in resource records.
+/// https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.4
+///
+/// CLASS fields appear in resource records.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum QueryClass {
     UNKNOWN(u16),
-    // 1 The Internet
+    /// 1 The Internet
     IN,
-    // 2 The CSNET class (Obsolete - used only for examples in some obsolete
-    // RFCs)
+    /// 2 The CSNET class (Obsolete - used only for examples in some obsolete
+    /// RFCs)
     CS,
-    // 3 The CHAOS class
+    /// 3 The CHAOS class
     CH,
-    // 4 Hesiod [Dyer 87]
+    /// 4 Hesiod [Dyer 87]
     HS,
 }
 
