@@ -55,7 +55,7 @@ impl BytePacketBuffer {
     }
 
     // Get a range of bytes from the current buffer.
-    fn get_range(&mut self, start: usize, length: usize) -> Result<&[u8], BytePacketBufferError> {
+    pub fn get_range(&mut self, start: usize, length: usize) -> Result<&[u8], BytePacketBufferError> {
         if start + length >= 512 {
             return Err(EndOfBuffer);
         }
