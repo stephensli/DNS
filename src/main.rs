@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::net::UdpSocket;
+use std::net::{Ipv4Addr, UdpSocket};
 use std::process::exit;
 use crate::dns::byte_packet_buffer::{BytePacketBuffer};
 use crate::dns::dns_packet::DnsPacket;
@@ -11,8 +11,7 @@ use crate::dns::result_code::ResultCode;
 mod dns;
 
 
-fn lookup(question_name: &str, question_type: QueryType) -> Result<DnsPacket, Box<dyn Error>> {
-    let server = ("8.8.8.8", 53);
+fn lookup(question_name: &str, question_type: QueryType, server: (Ipv4Addr, u16)) -> Result<DnsPacket, Box<dyn Error>> {
     let socket = UdpSocket::bind(("0.0.0.0", 43210))?;
 
     let mut packet = DnsPacket::new();
@@ -37,6 +36,70 @@ fn lookup(question_name: &str, question_type: QueryType) -> Result<DnsPacket, Bo
     socket.recv_from(&mut result_buffer.buffer)?;
 
     Ok(DnsPacket::from_buffer(&mut result_buffer)?)
+}
+
+fn recursive_lookup(question_name: &str, question_type: QueryType) -> Result<DnsPacket, Box<dyn Error>> {
+    // For now we're always starting with *a.root-servers.net*.
+    //
+    // There are 13 root servers, but in reality many more. You can read more
+    // about it here (root-servers). Any resolver will need to know of these 13
+    // servers beforehand. A file containing all of them, in bind format, is
+    // available and called named.root (https://www.internic.net/domain/named.root).
+    // These servers all contain the same information, and to get started we can
+    // pick one of them at random.
+    let mut ns = "198.41.0.4".parse::<Ipv4Addr>().unwrap();
+
+    // Since it might take an arbitrary number of steps, we enter an unbounded loop.
+    loop {
+        println!("attempting lookup of {:?} {} with ns {}",
+                 question_type, question_name, ns);
+
+        // The next step is to send the query to the active server.
+        let ns_copy = ns;
+
+        let server = (ns_copy, 53);
+        let response = lookup(question_name, question_type, server)?;
+
+        // If there are entries in the answer section, and no errors, we are done!
+        if !response.answers.is_empty() && response.header.rescode == ResultCode::NOERROR {
+            return Ok(response);
+        }
+
+        // We might also get a `NXDOMAIN` reply, which is the authoritative name
+        // servers way of telling us that the name doesn't exist.
+        if response.header.rescode == ResultCode::NXDOMAIN {
+            return Ok(response);
+        }
+
+        // Otherwise, we'll try to find a new nameserver based on NS and a
+        // corresponding A record in the additional section. If this succeeds,
+        // we can switch name server and retry the loop.
+        if let Some(new_ns) = response.get_resolved_ns(question_name) {
+            ns = new_ns;
+            continue;
+        }
+
+        // If not, we'll have to resolve the ip of a NS record. If no NS records
+        // exist, we'll go with what the last server told us.
+        let new_ns_name = match response.get_unresolved_ns(question_name) {
+            Some(x) => x,
+            None => return Ok(response),
+        };
+
+        // Here we go down the rabbit hole by starting _another_ lookup sequence in the
+        // midst of our current one. Hopefully, this will give us the IP of an appropriate
+        // name server.
+        let recursive_response = recursive_lookup(&new_ns_name, QueryType::A)?;
+
+        // Finally, we pick a random ip from the result, and restart the loop.
+        // If no such record is available, we again return the last result we
+        // got.
+        if let Some(new_ns) = recursive_response.get_random_a() {
+            ns = new_ns;
+        } else {
+            return Ok(response);
+        }
+    }
 }
 
 /// handle a single incoming packet request.
@@ -75,7 +138,7 @@ fn handle_query(socket: &UdpSocket) -> Result<(), Box<dyn Error>> {
         //
         // If rather everything goes as planned, the question and response
         // records are copied into our response packet.
-        if let Ok(result) = lookup(&question.q_name, question.q_type.clone()) {
+        if let Ok(result) = recursive_lookup(&question.q_name, question.q_type.clone()) {
             packet.questions.push(question);
             packet.header.rescode = result.header.rescode;
 
@@ -92,13 +155,13 @@ fn handle_query(socket: &UdpSocket) -> Result<(), Box<dyn Error>> {
                 packet.resources.push(rec);
             }
         } else {
-            packet.header.rescode = ResultCode::ServerFailure;
+            packet.header.rescode = ResultCode::SERVFAIL;
         }
     } else {
         // Being mindful of how unreliable input data from arbitrary senders can
         // be, we need make sure that a question is actually present. If not, we
         // return `FORMERR` to indicate that the sender made something wrong.
-        packet.header.rescode = ResultCode::FormatError;
+        packet.header.rescode = ResultCode::FORMERR;
     }
 
     // The only thing remaining is to encode our response and send it off!
@@ -120,7 +183,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // requests is initiated.
     loop {
         match handle_query(&socket) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => eprintln!("An error occurred: {}", e),
         }
     }

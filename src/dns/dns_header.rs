@@ -114,7 +114,7 @@ impl DnsHeader {
             opcode: 0,
             response: false,
 
-            rescode: ResultCode::NoError,
+            rescode: ResultCode::NOERROR,
             checking_disabled: false,
             authed_data: false,
             z: false,
